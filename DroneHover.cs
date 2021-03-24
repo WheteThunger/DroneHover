@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Oxide.Plugins
 {
     [Info("Drone Hover", "WhiteThunder", "1.0.0")]
-    [Description("Allows drones to stay hovering after a player stops controlling them at a computer station.")]
+    [Description("Allows RC drones to hover in place when a player disconnects control at a computer station.")]
     internal class DroneHover : CovalencePlugin
     {
         #region Fields
