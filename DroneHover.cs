@@ -95,6 +95,15 @@ namespace Oxide.Plugins
             return null;
         }
 
+        // This hook is exposed by plugin: Remover Tool (RemoverTool).
+        private bool? canRemove(BasePlayer player, Drone drone)
+        {
+            if (drone.IsBeingControlled)
+                return false;
+
+            return null;
+        }
+
         #endregion
 
         #region Helper Methods
