@@ -108,7 +108,7 @@ namespace Oxide.Plugins
 
         #region Helper Methods
 
-        private static bool DeployHoverWasBlocked(Drone drone, BasePlayer controller)
+        private static bool HoverWasBlocked(Drone drone, BasePlayer controller)
         {
             object hookResult = Interface.CallHook("OnDroneHoverStart", drone, controller);
             return hookResult is bool && (bool)hookResult == false;
@@ -133,7 +133,7 @@ namespace Oxide.Plugins
 
             RaycastHit hit;
             var isGrounded = drone.body.SweepTest(-drone.transform.up, out hit, drone.groundTraceDist);
-            if (isGrounded || DeployHoverWasBlocked(drone, player))
+            if (isGrounded || HoverWasBlocked(drone, player))
             {
                 _pluginData.HoveringDrones.Remove(drone.net.ID);
                 return;
