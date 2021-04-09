@@ -9,6 +9,8 @@ Without this plugin, RC drones will fall to the ground when the controlling play
 
 - [Drone Lights](https://umod.org/plugins/drone-lights) -- Adds controllable search lights to RC drones.
 - [Drone Storage](https://umod.org/plugins/drone-storage) -- Allows players to deploy a small stash to RC drones.
+- [Drone Turrets](https://umod.org/plugins/drone-turrets) -- Allows players to deploy auto turrets to RC drones.
+- [RC Identifier Fix](https://umod.org/plugins/rc-identifier-fix) -- Auto updates RC identifiers saved in computer stations to refer to the correct entity.
 
 ## Permissions
 
