@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Drone Hover", "WhiteThunder", "1.0.0")]
+    [Info("Drone Hover", "WhiteThunder", "1.0.1")]
     [Description("Allows RC drones to hover in place when a player disconnects control at a computer station.")]
     internal class DroneHover : CovalencePlugin
     {
@@ -98,6 +98,10 @@ namespace Oxide.Plugins
         // This hook is exposed by plugin: Remover Tool (RemoverTool).
         private bool? canRemove(BasePlayer player, Drone drone)
         {
+            // Null check since somebody reported this method was somehow throwing NREs.
+            if (drone == null)
+                return null;
+
             if (drone.IsBeingControlled)
                 return false;
 
