@@ -2,11 +2,10 @@
 using Newtonsoft.Json.Serialization;
 using Oxide.Core;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Drone Hover", "WhiteThunder", "1.0.1")]
+    [Info("Drone Hover", "WhiteThunder", "1.0.2")]
     [Description("Allows RC drones to hover in place when a player disconnects control at a computer station.")]
     internal class DroneHover : CovalencePlugin
     {
@@ -40,7 +39,15 @@ namespace Oxide.Plugins
 
         private void OnServerInitialized()
         {
-            RestoreHoveringDrones();
+            if (_pluginData.HoveringDrones == null)
+                return;
+
+            foreach (var entity in RemoteControlEntity.allControllables)
+            {
+                var drone = entity as Drone;
+                if (drone != null && _pluginData.HoveringDrones.Contains(drone.net.ID))
+                    MaybeStartDroneHover(drone, null);
+            }
         }
 
         private void OnServerSave()
@@ -53,31 +60,9 @@ namespace Oxide.Plugins
             _pluginData = StoredData.Clear();
         }
 
-        private void OnBookmarkControl(ComputerStation computerStation, BasePlayer player, string bookmarkName, IRemoteControllable entity)
-        {
-            var currentDrone = GetControlledDrone(computerStation);
-            if (currentDrone == null)
-                return;
-
-            // Must delay since the drone hasn't stopped being controlled yet.
-            NextTick(() =>
-            {
-                // Ignore if the drone is still being controlled, since that indicates the hook was blocked.
-                if (currentDrone == null
-                    || computerStation == null
-                    || computerStation.currentlyControllingEnt.uid == currentDrone.net.ID)
-                    return;
-
-                TryStartDroneHover(currentDrone, player);
-            });
-        }
-
         private void OnBookmarkControlEnded(ComputerStation station, BasePlayer player, Drone drone)
         {
-            if (drone == null || drone.IsBeingControlled)
-                return;
-
-            TryStartDroneHover(drone, player);
+            OnDroneControlEnded(drone, player);
         }
 
         private void OnEntityKill(Drone drone)
@@ -108,58 +93,51 @@ namespace Oxide.Plugins
             return null;
         }
 
+        // This hook is exposed by plugin: Ridable Drones (RidableDrones).
+        private void OnDroneControlEnded(Drone drone, BasePlayer player)
+        {
+            if (drone == null)
+                return;
+
+            MaybeStartDroneHover(drone, player);
+        }
+
         #endregion
 
         #region Helper Methods
 
-        private static bool HoverWasBlocked(Drone drone, BasePlayer controller)
+        private bool HoverWasBlocked(Drone drone, BasePlayer formerPilot)
         {
-            object hookResult = Interface.CallHook("OnDroneHoverStart", drone, controller);
+            object hookResult = Interface.CallHook("OnDroneHoverStart", drone, formerPilot);
             return hookResult is bool && (bool)hookResult == false;
         }
 
-        private static Drone GetControlledDrone(BasePlayer player)
+        private bool ShouldHover(Drone drone, BasePlayer formerPilot)
         {
-            var computerStation = player.GetMounted() as ComputerStation;
-            if (computerStation == null)
-                return null;
+            if (drone.IsBeingControlled || drone.isGrounded)
+                return false;
 
-            return GetControlledDrone(computerStation);
+            if (formerPilot != null && !permission.UserHasPermission(formerPilot.UserIDString, PermissionUse))
+                return false;
+
+            if (HoverWasBlocked(drone, formerPilot))
+                return false;
+
+            return true;
         }
 
-        private static Drone GetControlledDrone(ComputerStation computerStation) =>
-            computerStation.currentlyControllingEnt.Get(serverside: true) as Drone;
-
-        private void TryStartDroneHover(Drone drone, BasePlayer player)
+        private void MaybeStartDroneHover(Drone drone, BasePlayer formerPilot)
         {
-            if (player != null && !permission.UserHasPermission(player.UserIDString, PermissionUse))
-                return;
-
-            RaycastHit hit;
-            var isGrounded = drone.body.SweepTest(-drone.transform.up, out hit, drone.groundTraceDist);
-            if (isGrounded || HoverWasBlocked(drone, player))
+            if (!ShouldHover(drone, formerPilot))
             {
                 _pluginData.HoveringDrones.Remove(drone.net.ID);
                 return;
             }
 
-            drone.InitializeControl(player);
-            drone.UserInput(EmptyInputState, player);
+            drone.InitializeControl(formerPilot);
+            drone.UserInput(EmptyInputState, formerPilot);
             _pluginData.HoveringDrones.Add(drone.net.ID);
-            Interface.CallHook("OnDroneHoverStarted", drone, player);
-        }
-
-        private void RestoreHoveringDrones()
-        {
-            if (_pluginData.HoveringDrones == null)
-                return;
-
-            foreach (var entity in RemoteControlEntity.allControllables)
-            {
-                var drone = entity as Drone;
-                if (drone != null && !drone.IsBeingControlled && _pluginData.HoveringDrones.Contains(drone.net.ID))
-                    TryStartDroneHover(drone, null);
-            }
+            Interface.CallHook("OnDroneHoverStarted", drone, formerPilot);
         }
 
         #endregion
