@@ -1,17 +1,14 @@
 ﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using Oxide.Core;
 using System.Collections.Generic;
 
 namespace Oxide.Plugins
 {
-    [Info("Drone Hover", "WhiteThunder", "1.0.2")]
+    [Info("Drone Hover", "WhiteThunder", "1.0.3")]
     [Description("Allows RC drones to hover in place when a player disconnects control at a computer station.")]
     internal class DroneHover : CovalencePlugin
     {
         #region Fields
-
-        private static DroneHover _pluginInstance;
 
         private const string PermissionUse = "dronehover.use";
 
@@ -25,7 +22,6 @@ namespace Oxide.Plugins
 
         private void Init()
         {
-            _pluginInstance = this;
             _pluginData = StoredData.Load();
 
             permission.RegisterPermission(PermissionUse, this);
@@ -34,7 +30,6 @@ namespace Oxide.Plugins
         private void Unload()
         {
             OnServerSave();
-            _pluginInstance = null;
         }
 
         private void OnServerInitialized()
@@ -46,7 +41,9 @@ namespace Oxide.Plugins
             {
                 var drone = entity as Drone;
                 if (drone != null && _pluginData.HoveringDrones.Contains(drone.net.ID))
+                {
                     MaybeStartDroneHover(drone, null);
+                }
             }
         }
 
@@ -58,6 +55,20 @@ namespace Oxide.Plugins
         private void OnNewSave()
         {
             _pluginData = StoredData.Clear();
+        }
+
+        private void OnBookmarkControlStarted(ComputerStation station, BasePlayer player, string bookmarkName, Drone drone)
+        {
+            if (!drone.ControllingViewerId.HasValue)
+                return;
+
+            var viewerId = drone.ControllingViewerId.Value;
+            if (viewerId.SteamId != 0)
+                return;
+
+            drone.StopControl(viewerId);
+            drone.InitializeControl(new CameraViewerId(player.userID, 0));
+            station.SetFlag(BaseEntity.Flags.Reserved2, true);
         }
 
         private void OnBookmarkControlEnded(ComputerStation station, BasePlayer player, Drone drone)
@@ -108,7 +119,7 @@ namespace Oxide.Plugins
 
         private bool HoverWasBlocked(Drone drone, BasePlayer formerPilot)
         {
-            object hookResult = Interface.CallHook("OnDroneHoverStart", drone, formerPilot);
+            var hookResult = Interface.CallHook("OnDroneHoverStart", drone, formerPilot);
             return hookResult is bool && (bool)hookResult == false;
         }
 
@@ -134,8 +145,9 @@ namespace Oxide.Plugins
                 return;
             }
 
-            drone.InitializeControl(formerPilot);
-            drone.UserInput(EmptyInputState, formerPilot);
+            var cameraViewerId = new CameraViewerId(0, 0);
+            drone.InitializeControl(cameraViewerId);
+            drone.UserInput(EmptyInputState, cameraViewerId);
             _pluginData.HoveringDrones.Add(drone.net.ID);
             Interface.CallHook("OnDroneHoverStarted", drone, formerPilot);
         }
@@ -150,13 +162,13 @@ namespace Oxide.Plugins
             public HashSet<uint> HoveringDrones = new HashSet<uint>();
 
             public static StoredData Load() =>
-                Interface.Oxide.DataFileSystem.ReadObject<StoredData>(_pluginInstance.Name) ?? new StoredData();
+                Interface.Oxide.DataFileSystem.ReadObject<StoredData>(nameof(DroneHover)) ?? new StoredData();
 
             public static StoredData Clear() => new StoredData().Save();
 
             public StoredData Save()
             {
-                Interface.Oxide.DataFileSystem.WriteObject(_pluginInstance.Name, this);
+                Interface.Oxide.DataFileSystem.WriteObject(nameof(DroneHover), this);
                 return this;
             }
         }
