@@ -65,7 +65,8 @@ namespace Oxide.Plugins
             RCUtils.RemoveController(drone);
             RCUtils.RemoveViewer(drone, player);
             RCUtils.AddViewer(drone, player);
-            station.SetFlag(ComputerStation.Flag_HasFullControl, true);
+            station.SetFlag(ComputerStation.Flag_HasFullControl, true, networkupdate: false);
+            station.SendNetworkUpdateImmediate();
         }
 
         private void OnBookmarkControlEnded(ComputerStation station, BasePlayer player, Drone drone)
