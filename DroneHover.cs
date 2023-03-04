@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Oxide.Plugins
 {
-    [Info("Drone Hover", "WhiteThunder", "1.0.3")]
+    [Info("Drone Hover", "WhiteThunder", "1.0.4")]
     [Description("Allows RC drones to hover in place when a player disconnects control at a computer station.")]
     internal class DroneHover : CovalencePlugin
     {
