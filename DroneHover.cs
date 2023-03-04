@@ -12,8 +12,6 @@ namespace Oxide.Plugins
 
         private const string PermissionUse = "dronehover.use";
 
-        private readonly InputState EmptyInputState = new InputState();
-
         private StoredData _pluginData;
 
         #endregion
@@ -59,16 +57,13 @@ namespace Oxide.Plugins
 
         private void OnBookmarkControlStarted(ComputerStation station, BasePlayer player, string bookmarkName, Drone drone)
         {
-            if (!drone.ControllingViewerId.HasValue)
+            if (!RCUtils.HasFakeController(drone))
                 return;
 
-            var viewerId = drone.ControllingViewerId.Value;
-            if (viewerId.SteamId != 0)
-                return;
-
-            drone.StopControl(viewerId);
-            drone.InitializeControl(new CameraViewerId(player.userID, 0));
-            station.SetFlag(BaseEntity.Flags.Reserved2, true);
+            RCUtils.RemoveController(drone);
+            RCUtils.RemoveViewer(drone, player);
+            RCUtils.AddViewer(drone, player);
+            station.SetFlag(ComputerStation.Flag_HasFullControl, true);
         }
 
         private void OnBookmarkControlEnded(ComputerStation station, BasePlayer player, Drone drone)
@@ -115,7 +110,39 @@ namespace Oxide.Plugins
 
         #endregion
 
-        #region Helper Methods
+        #region Helpers
+
+        private static class RCUtils
+        {
+            public static bool HasFakeController(IRemoteControllable controllable)
+            {
+                return controllable.ControllingViewerId?.SteamId == 0;
+            }
+
+            public static void RemoveController(IRemoteControllable controllable)
+            {
+                var controllerId = controllable.ControllingViewerId;
+                if (controllerId.HasValue)
+                {
+                    controllable.StopControl(controllerId.Value);
+                }
+            }
+
+            public static bool AddViewer(IRemoteControllable controllable, BasePlayer player)
+            {
+                return controllable.InitializeControl(new CameraViewerId(player.userID, 0));
+            }
+
+            public static void RemoveViewer(IRemoteControllable controllable, BasePlayer player)
+            {
+                controllable.StopControl(new CameraViewerId(player.userID, 0));
+            }
+
+            public static bool AddFakeViewer(IRemoteControllable controllable)
+            {
+                return controllable.InitializeControl(new CameraViewerId());
+            }
+        }
 
         private bool HoverWasBlocked(Drone drone, BasePlayer formerPilot)
         {
@@ -145,9 +172,8 @@ namespace Oxide.Plugins
                 return;
             }
 
-            var cameraViewerId = new CameraViewerId(0, 0);
-            drone.InitializeControl(cameraViewerId);
-            drone.UserInput(EmptyInputState, cameraViewerId);
+            RCUtils.AddFakeViewer(drone);
+            drone.currentInput.Reset();
             _pluginData.HoveringDrones.Add(drone.net.ID);
             Interface.CallHook("OnDroneHoverStarted", drone, formerPilot);
         }
