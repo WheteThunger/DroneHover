@@ -76,16 +76,6 @@ namespace Oxide.Plugins
             _pluginData.HoveringDrones.Remove(drone.net.ID);
         }
 
-        private bool? CanPickupEntity(BasePlayer player, Drone drone)
-        {
-            // Prevent pickup while the drone is being controlled.
-            // This fixes the issue with vanilla drones, but the purpose is for the ones that are hovering.
-            if (drone.IsBeingControlled)
-                return false;
-
-            return null;
-        }
-
         // This hook is exposed by plugin: Remover Tool (RemoverTool).
         private bool? canRemove(BasePlayer player, Drone drone)
         {
