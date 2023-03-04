@@ -12,6 +12,8 @@ namespace Oxide.Plugins
 
         private const string PermissionUse = "dronehover.use";
 
+        private readonly object False = false;
+
         private StoredData _pluginData;
 
         #endregion
@@ -77,14 +79,14 @@ namespace Oxide.Plugins
         }
 
         // This hook is exposed by plugin: Remover Tool (RemoverTool).
-        private bool? canRemove(BasePlayer player, Drone drone)
+        private object canRemove(BasePlayer player, Drone drone)
         {
             // Null check since somebody reported this method was somehow throwing NREs.
             if (drone == null)
                 return null;
 
             if (drone.IsBeingControlled)
-                return false;
+                return False;
 
             return null;
         }
