@@ -3,7 +3,7 @@
 - Allows RC drones to automatically hover in place when a player (who has permission) disconnects control at a computer station.
 - Does not apply if the drone is on the ground when the player disconnects control.
 
-Without this plugin, RC drones will fall to the ground when the controlling player disconnects.
+Without this plugin, RC drones will fall to the ground when the controlling player disconnects from the computer station.
 
 ## Permissions
 
@@ -31,21 +31,21 @@ Drone attachments:
 
 #### OnDroneHoverStart
 
+```csharp
+object OnDroneHoverStart(Drone drone, BasePlayer optionalPilot)
+```
+
 - Called when a drone is about to start hovering
 - Returning `false` will prevent the drone from hovering
 - Returning `null` will result in the default behavior
 - The `BasePlayer` argument will be `null` if the drone is resuming hovering after a server restart
 
-```csharp
-bool? OnDroneHoverStart(Drone drone, BasePlayer optionalPilot)
-```
-
 #### OnDroneHoverStarted
-
-- Called after a drone has started hovering
-- No return behavior
-- The `BasePlayer` argument will be `null` if the drone resumed hovering after a server restart
 
 ```csharp
 void OnDroneHoverStarted(Drone drone, BasePlayer optionalPilot)
 ```
+
+- Called after a drone has started hovering
+- No return behavior
+- The `BasePlayer` argument will be `null` if the drone resumed hovering after a server restart
