@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Oxide.Plugins
 {
-    [Info("Drone Hover", "WhiteThunder", "1.0.4")]
+    [Info("Drone Hover", "WhiteThunder", "1.0.5")]
     [Description("Allows RC drones to hover in place when a player disconnects control at a computer station.")]
     internal class DroneHover : CovalencePlugin
     {
@@ -40,7 +40,7 @@ namespace Oxide.Plugins
             foreach (var entity in RemoteControlEntity.allControllables)
             {
                 var drone = entity as Drone;
-                if (drone != null && _pluginData.HoveringDrones.Contains(drone.net.ID))
+                if (drone != null && _pluginData.HoveringDrones.Contains(drone.net.ID.Value))
                 {
                     MaybeStartDroneHover(drone, null);
                 }
@@ -76,7 +76,7 @@ namespace Oxide.Plugins
 
         private void OnEntityKill(Drone drone)
         {
-            _pluginData.HoveringDrones.Remove(drone.net.ID);
+            _pluginData.HoveringDrones.Remove(drone.net.ID.Value);
         }
 
         // This hook is exposed by plugin: Remover Tool (RemoverTool).
@@ -161,13 +161,13 @@ namespace Oxide.Plugins
         {
             if (!ShouldHover(drone, formerPilot))
             {
-                _pluginData.HoveringDrones.Remove(drone.net.ID);
+                _pluginData.HoveringDrones.Remove(drone.net.ID.Value);
                 return;
             }
 
             RCUtils.AddFakeViewer(drone);
             drone.currentInput.Reset();
-            _pluginData.HoveringDrones.Add(drone.net.ID);
+            _pluginData.HoveringDrones.Add(drone.net.ID.Value);
             Interface.CallHook("OnDroneHoverStarted", drone, formerPilot);
         }
 
@@ -178,7 +178,7 @@ namespace Oxide.Plugins
         private class StoredData
         {
             [JsonProperty("HoveringDrones")]
-            public HashSet<uint> HoveringDrones = new HashSet<uint>();
+            public HashSet<ulong> HoveringDrones = new HashSet<ulong>();
 
             public static StoredData Load() =>
                 Interface.Oxide.DataFileSystem.ReadObject<StoredData>(nameof(DroneHover)) ?? new StoredData();
